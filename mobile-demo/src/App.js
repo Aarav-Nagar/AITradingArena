@@ -5,6 +5,7 @@ import { AppShell } from "./components/AppShell";
 import { Card } from "./components/Card";
 import { PrimaryButton, sharedText } from "./components/Shared";
 import { arena, lessons, starterJournal, tradeDraft } from "./data/mockData";
+import { AuthScreen } from "./screens/AuthScreen";
 import { ArenaScreen } from "./screens/ArenaScreen";
 import { CheckScreen } from "./screens/CheckScreen";
 import { GrowthScreen } from "./screens/GrowthScreen";
@@ -12,13 +13,14 @@ import { JournalScreen } from "./screens/JournalScreen";
 import { LearnScreen } from "./screens/LearnScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { ReportScreen } from "./screens/ReportScreen";
+import { createAccount, restoreSession, signIn, signOut } from "./services/authService";
 import { generateTradeCheck, saveJournalEntry, summarizeGrowth } from "./services/apiClient";
 import { palette } from "./theme/theme";
 
-const JOURNAL_STORAGE_KEY = "options-risk-check:journal";
 const ONBOARDING_STORAGE_KEY = "options-risk-check:onboarding-seen";
 
 export default function App() {
+  const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("Check");
   const [draft, setDraft] = useState(tradeDraft);
   const [currentReport, setCurrentReport] = useState(null);
@@ -29,23 +31,24 @@ export default function App() {
   const [error, setError] = useState("");
   const [ready, setReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const growthStats = useMemo(() => summarizeGrowth(journalEntries), [journalEntries]);
   const reportSaved = currentReport ? savedReportIds.includes(currentReport.id) : false;
+  const journalStorageKey = currentUser ? `options-risk-check:journal:${currentUser.id}` : null;
 
   useEffect(() => {
     let mounted = true;
     async function restoreState() {
       try {
-        const [journalJson, onboardingSeen] = await Promise.all([
-          AsyncStorage.getItem(JOURNAL_STORAGE_KEY),
-          AsyncStorage.getItem(ONBOARDING_STORAGE_KEY)
-        ]);
+        const [session, onboardingSeen] = await Promise.all([restoreSession(), AsyncStorage.getItem(ONBOARDING_STORAGE_KEY)]);
         if (!mounted) {
           return;
         }
-        if (journalJson) {
-          setJournalEntries(JSON.parse(journalJson));
+        if (session) {
+          setCurrentUser(session);
+          setDraft((current) => ({ ...current, user: firstName(session.name), accountSize: session.accountSize || 25000 }));
         }
         setShowOnboarding(onboardingSeen !== "true");
       } catch (err) {
@@ -63,10 +66,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (ready) {
-      AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journalEntries));
+    let mounted = true;
+    async function restoreJournal() {
+      if (!journalStorageKey) {
+        return;
+      }
+      const journalJson = await AsyncStorage.getItem(journalStorageKey);
+      if (mounted) {
+        setJournalEntries(journalJson ? JSON.parse(journalJson) : starterJournal);
+      }
     }
-  }, [journalEntries, ready]);
+    restoreJournal();
+    return () => {
+      mounted = false;
+    };
+  }, [journalStorageKey]);
+
+  useEffect(() => {
+    if (ready && journalStorageKey) {
+      AsyncStorage.setItem(journalStorageKey, JSON.stringify(journalEntries));
+    }
+  }, [journalEntries, journalStorageKey, ready]);
 
   async function handleTradeCheck() {
     setLoading(true);
@@ -104,6 +124,66 @@ export default function App() {
     setShowOnboarding(false);
   }
 
+  async function handleCreateAccount(form) {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const user = await createAccount(form);
+      enterApp(user);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignIn(form) {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const user = await signIn(form);
+      enterApp(user);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    setCurrentUser(null);
+    setCurrentReport(null);
+    setSavedReportIds([]);
+    setSavedNotice("");
+    setActiveTab("Check");
+    setJournalEntries(starterJournal);
+  }
+
+  function enterApp(user) {
+    setCurrentUser(user);
+    setDraft((current) => ({ ...current, user: firstName(user.name), accountSize: user.accountSize || 25000 }));
+    setActiveTab("Check");
+  }
+
+  if (!ready) {
+    return (
+      <AppShell showTabs={false}>
+        <View style={styles.loadingScreen}>
+          <Text style={sharedText.sectionTitle}>Loading Options Risk Check...</Text>
+        </View>
+      </AppShell>
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <AppShell showTabs={false}>
+        <AuthScreen onCreateAccount={handleCreateAccount} onSignIn={handleSignIn} loading={authLoading} error={authError} />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell activeTab={activeTab} setActiveTab={setActiveTab} disabledTabs={currentReport ? [] : ["Report"]}>
       {showOnboarding ? <OnboardingNotice onDismiss={dismissOnboarding} /> : null}
@@ -117,9 +197,13 @@ export default function App() {
       {activeTab === "Growth" && <GrowthScreen stats={growthStats} />}
       {activeTab === "Arena" && <ArenaScreen arena={arena} />}
       {activeTab === "Learn" && <LearnScreen lessons={lessons} />}
-      {activeTab === "Profile" && <ProfileScreen />}
+      {activeTab === "Profile" && <ProfileScreen user={currentUser} onSignOut={handleSignOut} />}
     </AppShell>
   );
+}
+
+function firstName(name) {
+  return (name || "Alex").split(" ")[0];
 }
 
 function OnboardingNotice({ onDismiss }) {
@@ -153,5 +237,11 @@ const styles = StyleSheet.create({
   onboardingCard: {
     borderColor: "#BCEAC9",
     backgroundColor: "#FBFFFC"
+  },
+  loadingScreen: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18
   }
 });

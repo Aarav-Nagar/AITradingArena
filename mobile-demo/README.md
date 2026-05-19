@@ -33,6 +33,9 @@ uvicorn api.app:app --host 127.0.0.1 --port 8000
 
 ## Current behavior
 
+- First open starts at an account home page instead of the trading workflow.
+- Users can create a local demo account, sign in, persist a session, and sign out from Profile.
+- Demo accounts are stored locally on the device/browser for prototype review.
 - Check form values are editable.
 - Check This Trade generates a report from the current form state.
 - Trade checks call the local FastAPI endpoint when it is running and fall back to demo scoring when it is offline.

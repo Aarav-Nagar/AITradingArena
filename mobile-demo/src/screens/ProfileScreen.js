@@ -2,20 +2,29 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Card } from "../components/Card";
 import { Pill } from "../components/Pill";
-import { Header, ScreenScroll, sharedText } from "../components/Shared";
+import { Header, PrimaryButton, ScreenScroll, sharedText } from "../components/Shared";
 import { palette } from "../theme/theme";
 
-export function ProfileScreen() {
+export function ProfileScreen({ user, onSignOut }) {
+  const initials = user?.name
+    ? user.name
+        .split(" ")
+        .map((part) => part[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "AT";
+
   return (
     <ScreenScroll>
       <Header kicker="7. PROFILE" title="Profile" subtitle="Manage your account and settings." />
       <Card style={styles.profileHero}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>AT</Text>
+          <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <View style={styles.flex}>
-          <Text style={sharedText.mediumTitle}>Alex Trader</Text>
-          <Text style={sharedText.bodyText}>alex@example.com</Text>
+          <Text style={sharedText.mediumTitle}>{user?.name || "Alex Trader"}</Text>
+          <Text style={sharedText.bodyText}>{user?.email || "alex@example.com"}</Text>
         </View>
         <Pill label="Demo Plan" tone="good" />
       </Card>
@@ -26,6 +35,7 @@ export function ProfileScreen() {
         <Text style={sharedText.mediumTitle}>Options Risk Check v1.0</Text>
         <Text style={sharedText.bodyText}>This is educational research software, not financial advice.</Text>
       </Card>
+      <PrimaryButton label="Sign Out" onPress={onSignOut} style={styles.signOut} />
     </ScreenScroll>
   );
 }
@@ -96,5 +106,9 @@ const styles = StyleSheet.create({
   },
   takeaway: {
     backgroundColor: "#FBFFFC"
+  },
+  signOut: {
+    backgroundColor: palette.red,
+    marginBottom: 12
   }
 });
