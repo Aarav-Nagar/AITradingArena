@@ -29,6 +29,22 @@ export function ProfileScreen({ user, onSignOut }) {
         <Pill label="Demo Plan" tone="good" />
       </Card>
       <SettingsGroup title="Account" rows={[["Account Size", "$25,000"], ["Risk Budget", "5% ($1,250)"], ["Default Timeframe", "1-2 Weeks"]]} />
+      <SettingsGroup
+        title="Trading Profile"
+        rows={[
+          ["Experience", user?.experienceLevel || "Some experience"],
+          ["Risk Style", user?.riskStyle || "Balanced"],
+          ["Purpose", summarize(user?.purpose)]
+        ]}
+      />
+      <SettingsGroup
+        title="Market Focus"
+        rows={[
+          ["Sectors", summarize(user?.sectors)],
+          ["Market Cap", summarize(user?.marketCaps)],
+          ["Events", summarize(user?.events)]
+        ]}
+      />
       <SettingsGroup title="Preferences" rows={[["Default Risk per Trade", "1.5%"], ["Notifications", "On"]]} />
       <SettingsGroup title="Legal & Privacy" rows={[["Disclaimer", "Educational only"], ["Privacy Policy", "View"], ["Data Settings", "Manage"]]} />
       <Card style={styles.takeaway}>
@@ -38,6 +54,13 @@ export function ProfileScreen({ user, onSignOut }) {
       <PrimaryButton label="Sign Out" onPress={onSignOut} style={styles.signOut} />
     </ScreenScroll>
   );
+}
+
+function summarize(values) {
+  if (!values || values.length === 0) {
+    return "Not set";
+  }
+  return values.slice(0, 4).join(", ") + (values.length > 4 ? ` +${values.length - 4}` : "");
 }
 
 function SettingsGroup({ title, rows }) {

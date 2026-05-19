@@ -8,7 +8,8 @@ export async function restoreSession() {
   return sessionJson ? JSON.parse(sessionJson) : null;
 }
 
-export async function createAccount({ name, email, password }) {
+export async function createAccount(profile) {
+  const { name, email, password } = profile;
   const cleanEmail = email.trim().toLowerCase();
   const users = await getUsers();
   if (users.some((user) => user.email === cleanEmail)) {
@@ -22,8 +23,18 @@ export async function createAccount({ name, email, password }) {
     id: `user-${Date.now()}`,
     name: name.trim(),
     email: cleanEmail,
-    accountSize: 25000,
-    riskBudgetPercent: 5,
+    accountSize: Number(profile.accountSize || 25000),
+    riskBudgetPercent: Number(profile.riskBudgetPercent || 2),
+    purpose: profile.purpose || [],
+    tradeFocus: profile.tradeFocus || [],
+    experienceLevel: profile.experienceLevel || "Still learning",
+    riskStyle: profile.riskStyle || "Balanced",
+    struggles: profile.struggles || [],
+    reminders: profile.reminders || [],
+    sectors: profile.sectors || [],
+    marketCaps: profile.marketCaps || [],
+    events: profile.events || [],
+    safetyAccepted: Boolean(profile.safetyAccepted),
     createdAt: new Date().toISOString()
   };
 
@@ -53,4 +64,3 @@ async function getUsers() {
   const usersJson = await AsyncStorage.getItem(USERS_KEY);
   return usersJson ? JSON.parse(usersJson) : [];
 }
-

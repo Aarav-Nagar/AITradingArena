@@ -48,7 +48,12 @@ export default function App() {
         }
         if (session) {
           setCurrentUser(session);
-          setDraft((current) => ({ ...current, user: firstName(session.name), accountSize: session.accountSize || 25000 }));
+          setDraft((current) => ({
+            ...current,
+            user: firstName(session.name),
+            accountSize: session.accountSize || 25000,
+            riskBudget: Math.round((Number(session.accountSize || 25000) * Number(session.riskBudgetPercent || 2)) / 100)
+          }));
         }
         setShowOnboarding(onboardingSeen !== "true");
       } catch (err) {
@@ -160,11 +165,16 @@ export default function App() {
     setJournalEntries(starterJournal);
   }
 
-  function enterApp(user) {
-    setCurrentUser(user);
-    setDraft((current) => ({ ...current, user: firstName(user.name), accountSize: user.accountSize || 25000 }));
-    setActiveTab("Check");
-  }
+function enterApp(user) {
+  setCurrentUser(user);
+  setDraft((current) => ({
+    ...current,
+    user: firstName(user.name),
+    accountSize: user.accountSize || 25000,
+    riskBudget: Math.round((Number(user.accountSize || 25000) * Number(user.riskBudgetPercent || 2)) / 100)
+  }));
+  setActiveTab("Check");
+}
 
   if (!ready) {
     return (
