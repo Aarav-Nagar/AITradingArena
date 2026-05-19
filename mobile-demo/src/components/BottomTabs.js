@@ -1,23 +1,32 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { palette } from "../theme/theme";
 
 export const tabs = [
-  ["Check", "C"],
-  ["Report", "R"],
-  ["Journal", "J"],
-  ["Growth", "G"],
-  ["Arena", "A"],
-  ["Learn", "L"],
-  ["Profile", "P"]
+  ["Check", "search-outline"],
+  ["Report", "document-text-outline"],
+  ["Journal", "book-outline"],
+  ["Growth", "trending-up-outline"],
+  ["Arena", "trophy-outline"],
+  ["Learn", "school-outline"],
+  ["Profile", "person-outline"]
 ];
 
-export function BottomTabs({ activeTab, setActiveTab }) {
+export function BottomTabs({ activeTab, setActiveTab, disabledTabs = [] }) {
   return (
     <View style={styles.tabBar}>
       {tabs.map(([name, icon]) => (
-        <Pressable key={name} style={styles.tabItem} onPress={() => setActiveTab(name)}>
-          <Text style={[styles.tabIcon, activeTab === name && styles.active]}>{icon}</Text>
+        <Pressable
+          key={name}
+          style={[styles.tabItem, disabledTabs.includes(name) && styles.disabled]}
+          onPress={() => !disabledTabs.includes(name) && setActiveTab(name)}
+        >
+          <Ionicons
+            name={icon}
+            size={19}
+            color={activeTab === name ? palette.green : palette.muted}
+          />
           <Text style={[styles.tabLabel, activeTab === name && styles.active]}>{name}</Text>
         </Pressable>
       ))}
@@ -41,12 +50,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  tabIcon: {
-    color: palette.muted,
-    fontSize: 15,
-    lineHeight: 19,
-    fontWeight: "900"
-  },
   tabLabel: {
     color: palette.muted,
     fontSize: 9,
@@ -55,6 +58,8 @@ const styles = StyleSheet.create({
   },
   active: {
     color: palette.green
+  },
+  disabled: {
+    opacity: 0.35
   }
 });
-

@@ -5,6 +5,9 @@ import { Metric } from "../components/Metric";
 import { AiCard, ErrorCard, Field, Header, money, PrimaryButton, ScreenScroll, SelectLike, sharedText } from "../components/Shared";
 import { palette } from "../theme/theme";
 
+const tradeTypes = ["Call Option (Long)", "Put Option (Long)", "Stock Position (Long)", "Watchlist Only"];
+const timeframes = ["Intraday", "1-3 Days", "1-2 Weeks", "1 Month+"];
+
 export function CheckScreen({ draft, setDraft, onCheck, loading, error }) {
   const riskPercent = ((Number(draft.amountAtRisk || 0) / Number(draft.accountSize || 1)) * 100).toFixed(1);
 
@@ -37,7 +40,12 @@ export function CheckScreen({ draft, setDraft, onCheck, loading, error }) {
       <Card>
         <Text style={sharedText.sectionTitle}>What trade are you checking?</Text>
         <Field label="Ticker" value={draft.ticker} onChangeText={(ticker) => setDraft({ ...draft, ticker })} suffix="." />
-        <SelectLike label="Trade Type" value={draft.tradeType} />
+        <SelectLike
+          label="Trade Type"
+          value={draft.tradeType}
+          options={tradeTypes}
+          onSelect={(tradeType) => setDraft({ ...draft, tradeType })}
+        />
         <View style={styles.inputRow}>
           <Field label="Strike Price" value={draft.strike} onChangeText={(strike) => setDraft({ ...draft, strike })} />
           <Field label="Expiration" value={draft.expiration} onChangeText={(expiration) => setDraft({ ...draft, expiration })} suffix="cal" />
@@ -48,7 +56,12 @@ export function CheckScreen({ draft, setDraft, onCheck, loading, error }) {
           onChangeText={(amount) => setDraft({ ...draft, amountAtRisk: amount.replace(/[^0-9]/g, "") })}
           suffix={`${riskPercent}%`}
         />
-        <SelectLike label="Timeframe" value={draft.timeframe} />
+        <SelectLike
+          label="Timeframe"
+          value={draft.timeframe}
+          options={timeframes}
+          onSelect={(timeframe) => setDraft({ ...draft, timeframe })}
+        />
         <PrimaryButton label={loading ? "Checking..." : "Check This Trade"} onPress={onCheck} disabled={loading} />
       </Card>
 
@@ -108,4 +121,3 @@ const styles = StyleSheet.create({
     fontWeight: "900"
   }
 });
-

@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Card } from "./Card";
 import { palette } from "../theme/theme";
 
@@ -37,17 +37,80 @@ export function Field({ label, value, onChangeText, suffix }) {
   );
 }
 
-export function SelectLike({ label, value, onPress }) {
-  return (
-    <Pressable style={styles.fieldWrap} onPress={onPress}>
-      <Text style={styles.inputLabel}>{label}</Text>
-      <View style={styles.field}>
-        <Text style={styles.selectText}>{value}</Text>
-        <Text style={styles.fieldSuffix}>v</Text>
+export function SelectLike({ label, value, options = [], onSelect }) {
+  const [open, setOpen] = React.useState(false);
+  const choose = (option) => {
+    onSelect?.(option);
+    setOpen(false);
+  };
+
+  if (Platform.OS === "web") {
+    return (
+      <View style={styles.fieldWrap}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        <select
+          aria-label={label}
+          value={value}
+          onChange={(event) => choose(event.target.value)}
+          style={webSelectStyle}
+        >
+          {options.map((option) => (
+            <option value={option} key={option}>
+              {option}
+            </option>
+          ))}
+        </select>
       </View>
-    </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.fieldWrap}>
+      <Text style={styles.inputLabel}>{label}</Text>
+      <Pressable style={styles.field} onPress={() => setOpen((current) => !current)}>
+        <Text style={styles.selectText}>{value}</Text>
+        <Text style={styles.fieldSuffix}>{open ? "^" : "v"}</Text>
+      </Pressable>
+      {open ? (
+        <View style={styles.optionPanel}>
+          {options.map((option) => (
+            <Pressable
+              key={option}
+              accessibilityRole="button"
+              accessibilityLabel={`Select ${option}`}
+              style={[styles.option, option === value && styles.optionActive]}
+              onPress={() => choose(option)}
+              onClick={() => choose(option)}
+              onStartShouldSetResponder={() => true}
+              onResponderRelease={() => choose(option)}
+            >
+              <Text
+                style={[styles.optionText, option === value && styles.optionTextActive]}
+                onPress={() => choose(option)}
+                onClick={() => choose(option)}
+              >
+                {option}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+    </View>
   );
 }
+
+const webSelectStyle = {
+  width: "100%",
+  minHeight: 43,
+  border: `1px solid ${palette.border}`,
+  borderRadius: 12,
+  padding: "0 12px",
+  backgroundColor: "#FBFCFB",
+  color: palette.dark,
+  fontWeight: "800",
+  fontSize: 13,
+  outline: "none"
+};
 
 export function PrimaryButton({ label, onPress, style, disabled }) {
   return (
@@ -221,6 +284,31 @@ const styles = StyleSheet.create({
     color: palette.green,
     fontSize: 12,
     fontWeight: "900"
+  },
+  optionPanel: {
+    marginTop: 6,
+    borderWidth: 1,
+    borderColor: palette.border,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    overflow: "hidden"
+  },
+  option: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F3F0"
+  },
+  optionActive: {
+    backgroundColor: palette.greenSoft
+  },
+  optionText: {
+    color: palette.dark,
+    fontSize: 12,
+    fontWeight: "800"
+  },
+  optionTextActive: {
+    color: palette.green
   },
   primaryButton: {
     minHeight: 49,

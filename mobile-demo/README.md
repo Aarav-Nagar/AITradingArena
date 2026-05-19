@@ -13,6 +13,14 @@ npm run web
 
 Open the Expo web URL in a browser. The app renders inside a phone-sized frame so the layout can be reviewed from a laptop.
 
+To use the local API-backed trade check:
+
+```bash
+cd ..
+pip install -r api/requirements.txt
+uvicorn api.app:app --host 127.0.0.1 --port 8000
+```
+
 ## Screens
 
 - Check
@@ -27,9 +35,12 @@ Open the Expo web URL in a browser. The app renders inside a phone-sized frame s
 
 - Check form values are editable.
 - Check This Trade generates a report from the current form state.
+- Trade checks call the local FastAPI endpoint when it is running and fall back to demo scoring when it is offline.
 - Save to Journal adds the current report to the journal for this session.
+- Journal entries persist locally across refreshes.
 - Growth reads from journal entries and falls back to sample metrics when needed.
 - Arena shows the options-agent replay as an educational experiment.
+- The first-run disclaimer frames the app as educational risk review only.
 
 ## Structure
 

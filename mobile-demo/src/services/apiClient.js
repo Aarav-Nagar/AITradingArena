@@ -1,6 +1,34 @@
 import { baseReport, mockGrowthStats } from "../data/mockData";
 
+const API_BASE_URL = "http://127.0.0.1:8000";
+
 export async function generateTradeCheck(draft) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/trade-check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ticker: draft.ticker,
+        trade_type: draft.tradeType,
+        strike: Number(draft.strike || 0),
+        expiration: draft.expiration,
+        amount_at_risk: Number(draft.amountAtRisk || 0),
+        timeframe: draft.timeframe,
+        account_size: Number(draft.accountSize || 0)
+      })
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return normalizeBackendReport(data, draft);
+    }
+  } catch (err) {
+    // Local demo fallback: keep the app usable when FastAPI is not running.
+  }
+
+  return generateMockTradeCheck(draft);
+}
+
+async function generateMockTradeCheck(draft) {
   await delay(350);
 
   const amount = Number(draft.amountAtRisk || 0);
@@ -27,10 +55,35 @@ export async function generateTradeCheck(draft) {
     setupScore,
     riskScore,
     agentAgreement: Math.max(55, baseReport.agentAgreement - Math.round(riskPenalty * 1.5)),
+    methodologyLabel: "Educational demo score",
     insight:
       riskPercent > 2
-        ? "The setup is interesting, but the planned risk is above the app's conservative demo limit. Consider reviewing size before acting."
-        : baseReport.insight
+        ? "This check shows elevated sizing risk relative to the demo account. The setup may still be worth studying, but the risk budget should be reviewed before any real decision."
+        : "This check has constructive technical context, but it is not a forecast. Treat the score as a structured risk review, not a trade instruction."
+  };
+}
+
+function normalizeBackendReport(data, draft) {
+  return {
+    id: data.id || `check-${Date.now()}`,
+    ...baseReport,
+    title: data.title || `${draft.ticker.toUpperCase()} ${draft.tradeType}`,
+    subtitle: data.subtitle || `$${draft.strike} Strike - ${draft.expiration} - ${draft.timeframe}`,
+    ticker: data.ticker || draft.ticker.toUpperCase(),
+    tradeType: data.trade_type || draft.tradeType,
+    strike: String(data.strike || draft.strike),
+    expiration: data.expiration || draft.expiration,
+    amountAtRisk: data.amount_at_risk || Number(draft.amountAtRisk || 0),
+    timeframe: data.timeframe || draft.timeframe,
+    badge: data.badge || baseReport.badge,
+    setupScore: data.setup_score ?? baseReport.setupScore,
+    riskScore: data.risk_score ?? baseReport.riskScore,
+    agentAgreement: data.agent_agreement ?? baseReport.agentAgreement,
+    checks: data.checks || baseReport.checks,
+    agents: data.agents || baseReport.agents,
+    scenarios: data.scenarios || baseReport.scenarios,
+    methodologyLabel: data.methodology_label || "Backend educational score",
+    insight: data.insight || baseReport.insight
   };
 }
 
@@ -86,4 +139,3 @@ export function summarizeGrowth(entries) {
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-

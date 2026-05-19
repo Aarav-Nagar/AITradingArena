@@ -4,7 +4,7 @@ import { StatusBar as ExpoStatusBar } from "expo-status-bar";
 import { BottomTabs } from "./BottomTabs";
 import { palette } from "../theme/theme";
 
-export function AppShell({ activeTab, setActiveTab, children }) {
+export function AppShell({ activeTab, setActiveTab, disabledTabs, children }) {
   return (
     <SafeAreaView style={styles.appCanvas}>
       <StatusBar barStyle="dark-content" />
@@ -12,7 +12,7 @@ export function AppShell({ activeTab, setActiveTab, children }) {
       <View style={styles.phone}>
         <PhoneStatusBar />
         <View style={styles.screen}>{children}</View>
-        <BottomTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+        <BottomTabs activeTab={activeTab} setActiveTab={setActiveTab} disabledTabs={disabledTabs} />
       </View>
     </SafeAreaView>
   );
@@ -81,4 +81,3 @@ const styles = StyleSheet.create({
     flex: 1
   }
 });
-

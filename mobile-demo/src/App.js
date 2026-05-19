@@ -1,5 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppShell } from "./components/AppShell";
+import { Card } from "./components/Card";
+import { PrimaryButton, sharedText } from "./components/Shared";
 import { arena, lessons, starterJournal, tradeDraft } from "./data/mockData";
 import { ArenaScreen } from "./screens/ArenaScreen";
 import { CheckScreen } from "./screens/CheckScreen";
@@ -9,6 +13,10 @@ import { LearnScreen } from "./screens/LearnScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
 import { ReportScreen } from "./screens/ReportScreen";
 import { generateTradeCheck, saveJournalEntry, summarizeGrowth } from "./services/apiClient";
+import { palette } from "./theme/theme";
+
+const JOURNAL_STORAGE_KEY = "options-risk-check:journal";
+const ONBOARDING_STORAGE_KEY = "options-risk-check:onboarding-seen";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("Check");
@@ -19,9 +27,46 @@ export default function App() {
   const [savedNotice, setSavedNotice] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const growthStats = useMemo(() => summarizeGrowth(journalEntries), [journalEntries]);
   const reportSaved = currentReport ? savedReportIds.includes(currentReport.id) : false;
+
+  useEffect(() => {
+    let mounted = true;
+    async function restoreState() {
+      try {
+        const [journalJson, onboardingSeen] = await Promise.all([
+          AsyncStorage.getItem(JOURNAL_STORAGE_KEY),
+          AsyncStorage.getItem(ONBOARDING_STORAGE_KEY)
+        ]);
+        if (!mounted) {
+          return;
+        }
+        if (journalJson) {
+          setJournalEntries(JSON.parse(journalJson));
+        }
+        setShowOnboarding(onboardingSeen !== "true");
+      } catch (err) {
+        setShowOnboarding(true);
+      } finally {
+        if (mounted) {
+          setReady(true);
+        }
+      }
+    }
+    restoreState();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (ready) {
+      AsyncStorage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journalEntries));
+    }
+  }, [journalEntries, ready]);
 
   async function handleTradeCheck() {
     setLoading(true);
@@ -54,8 +99,14 @@ export default function App() {
     setActiveTab("Journal");
   }
 
+  async function dismissOnboarding() {
+    await AsyncStorage.setItem(ONBOARDING_STORAGE_KEY, "true");
+    setShowOnboarding(false);
+  }
+
   return (
-    <AppShell activeTab={activeTab} setActiveTab={setActiveTab}>
+    <AppShell activeTab={activeTab} setActiveTab={setActiveTab} disabledTabs={currentReport ? [] : ["Report"]}>
+      {showOnboarding ? <OnboardingNotice onDismiss={dismissOnboarding} /> : null}
       {activeTab === "Check" && (
         <CheckScreen draft={draft} setDraft={setDraft} onCheck={handleTradeCheck} loading={loading} error={error} />
       )}
@@ -71,3 +122,36 @@ export default function App() {
   );
 }
 
+function OnboardingNotice({ onDismiss }) {
+  return (
+    <View style={styles.onboardingOverlay}>
+      <Card style={styles.onboardingCard}>
+        <Text style={sharedText.sectionTitle}>Educational risk checks only</Text>
+        <Text style={sharedText.bodyText}>
+          This demo helps structure options risk, journal decisions, and study agent experiments. It does not execute trades,
+          give financial advice, or tell you what to buy or sell.
+        </Text>
+        <PrimaryButton label="I Understand" onPress={onDismiss} />
+      </Card>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  onboardingOverlay: {
+    position: "absolute",
+    zIndex: 10,
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 74,
+    backgroundColor: "rgba(247,249,247,0.92)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 18
+  },
+  onboardingCard: {
+    borderColor: "#BCEAC9",
+    backgroundColor: "#FBFFFC"
+  }
+});

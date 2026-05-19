@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import Svg, { Defs, LinearGradient, Path, Polyline, Stop } from "react-native-svg";
 import { palette } from "../theme/theme";
 
 export function LineChart({ points, color = palette.green, fill }) {
@@ -10,14 +11,24 @@ export function LineChart({ points, color = palette.green, fill }) {
     y: 100 - ((point - min) / (max - min || 1)) * 74 - 12
   }));
 
+  const polyline = normalized.map((point) => `${point.x * 3.5},${point.y * 1.65}`).join(" ");
+  const areaPath = `M ${normalized[0].x * 3.5},165 ${normalized
+    .map((point) => `L ${point.x * 3.5},${point.y * 1.65}`)
+    .join(" ")} L ${normalized[normalized.length - 1].x * 3.5},165 Z`;
+
   return (
     <View style={styles.chart}>
-      {fill ? <View style={styles.fill} /> : null}
-      {normalized.slice(1).map((point, index) => {
-        const prev = normalized[index];
-        return <View key={`${point.x}-${point.y}`} style={[styles.line, segmentStyle(prev, point, color)]} />;
-      })}
-      <View style={styles.axis} />
+      <Svg width="100%" height="100%" viewBox="0 0 350 190">
+        <Defs>
+          <LinearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={color} stopOpacity="0.22" />
+            <Stop offset="1" stopColor={color} stopOpacity="0.02" />
+          </LinearGradient>
+        </Defs>
+        {fill ? <Path d={areaPath} fill="url(#chartFill)" /> : null}
+        <Polyline points={polyline} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <Path d="M 12 166 L 338 166" stroke="#E7ECE8" strokeWidth="1" />
+      </Svg>
     </View>
   );
 }
@@ -34,20 +45,6 @@ export function ArenaChart({ arena }) {
   );
 }
 
-function segmentStyle(a, b, color) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const length = Math.sqrt(dx * dx + dy * dy);
-  const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-  return {
-    left: `${a.x}%`,
-    top: `${a.y}%`,
-    width: `${length}%`,
-    backgroundColor: color,
-    transform: [{ rotate: `${angle}deg` }]
-  };
-}
-
 const styles = StyleSheet.create({
   chart: {
     height: 190,
@@ -56,28 +53,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAFCFA",
     overflow: "hidden",
     position: "relative"
-  },
-  fill: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: "58%",
-    backgroundColor: "#E5F7EA"
-  },
-  line: {
-    position: "absolute",
-    height: 3,
-    borderRadius: 99,
-    transformOrigin: "0% 50%"
-  },
-  axis: {
-    position: "absolute",
-    left: 12,
-    right: 12,
-    bottom: 24,
-    height: 1,
-    backgroundColor: "#E7ECE8"
   },
   arenaChart: {
     position: "relative",
@@ -101,4 +76,3 @@ const styles = StyleSheet.create({
     textAlign: "right"
   }
 });
-

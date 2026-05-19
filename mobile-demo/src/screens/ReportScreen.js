@@ -18,6 +18,9 @@ export function ReportScreen({ report, onSave, saved }) {
   return (
     <ScreenScroll>
       <Header kicker="2. REPORT" title={report.title} subtitle={report.subtitle} right={<Pill label={report.badge} tone="good" />} />
+      <View style={styles.methodology}>
+        <Text style={styles.methodologyText}>{report.methodologyLabel || "Educational risk review"} - not financial advice</Text>
+      </View>
 
       <Card>
         <View style={styles.reportGrid}>
@@ -39,7 +42,7 @@ export function ReportScreen({ report, onSave, saved }) {
           <RiskGauge value={report.riskScore} />
           <View style={styles.flex}>
             <Text style={sharedText.mediumTitle}>Moderate Risk</Text>
-            <Text style={sharedText.bodyText}>Defined risk with reasonable reward potential. Position size deserves attention.</Text>
+            <Text style={sharedText.bodyText}>This estimate summarizes sizing, volatility, and setup quality. It does not predict profit or recommend action.</Text>
           </View>
         </View>
       </Card>
@@ -202,6 +205,19 @@ const styles = StyleSheet.create({
   },
   actionGrow: {
     flex: 1
+  },
+  methodology: {
+    backgroundColor: "#FFFDF7",
+    borderColor: "#FDE7B5",
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 12
+  },
+  methodologyText: {
+    color: "#92400E",
+    fontSize: 11,
+    fontWeight: "800"
   }
 });
-
